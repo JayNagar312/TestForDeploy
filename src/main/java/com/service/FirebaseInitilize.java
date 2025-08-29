@@ -1,31 +1,32 @@
-package com.service;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-
-import javax.annotation.PostConstruct;
-
-import org.springframework.stereotype.Service;
+package com.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Configuration;
 
-@Service
-public class FirebaseInitilize {
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
-	@PostConstruct
-	public void initilize() throws IOException {
-		
-		FileInputStream serviceAccount =
-				new FileInputStream("./serviceAccountKey.json");
+@Configuration
+public class FirebaseInitializer {
 
-				FirebaseOptions options = new FirebaseOptions.Builder()
-				  .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-				  .build();
+    @PostConstruct
+    public void init() throws Exception {
+        String firebaseConfig = System.getenv("FIREBASE_CONFIG"); // reads from Render env variable
+        if (firebaseConfig == null) {
+            throw new IllegalStateException("FIREBASE_CONFIG environment variable not found");
+        }
 
-				FirebaseApp.initializeApp(options);
+        InputStream serviceAccount = new ByteArrayInputStream(firebaseConfig.getBytes());
 
-	}
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .build();
 
+        if (FirebaseApp.getApps().isEmpty()) {
+            FirebaseApp.initializeApp(options);
+        }
+    }
 }
